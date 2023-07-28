@@ -17,7 +17,10 @@ pub enum KeyWord {
 }
 #[derive(Debug)]
 pub enum SymbolType{
-    Assign
+    Assign,
+    Leftquotation,
+    Rightquotation,
+    
 }
 #[derive(Debug)]
 pub struct Token {
@@ -70,7 +73,6 @@ impl LexerIter<'_> {
         while is_letter(self.char as char) && self.pos < self.input.len() {
             self.read_next();
         }
-        println!("{}",self.pos);
         self.input[p..self.pos].to_string()
     }
     fn read_num(&mut self) -> String {
@@ -79,6 +81,22 @@ impl LexerIter<'_> {
             self.read_next();
         }
         self.input[p..self.pos].to_string()
+    }
+    fn read_str(&mut self)->String{
+        self.read_next();
+        let p = self.pos;
+        while is_letter(self.char as char) || is_num(self.char as char){
+            self.read_next();
+            if self.char as char == '"' {
+                break;
+            }
+        }
+        self.input[p..self.pos].to_string()
+    }
+    fn skip_space(&mut self){
+        while is_space(self.char as char) {
+            self.read_next();
+        }
     }
 
 }
@@ -91,7 +109,7 @@ impl Iterator for LexerIter<'_> {
             return None;
         } else {
             if is_space(current_char){
-                self.read_next();
+                self.skip_space();
                 current_char = self.char as char;
             }
             if is_letter(current_char) {
@@ -107,6 +125,11 @@ impl Iterator for LexerIter<'_> {
                             SymbolType::Assign
                         ),
                         value:None
+                    }
+                }else if current_char == '"'{
+                    res = Token{
+                        ty:TokenType::Stringliteral,
+                        value:Some(self.read_str())
                     }
                 }
             }else if is_num(current_char) {
@@ -127,10 +150,16 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let str = "x = 55";
+        let str = "
+        x = 5566666666
+        y = \"66\""
+        ;
         let lex = Lexer::new(str);
         for i in lex.iter() {
-            println!("{:?}", i)
+            println!("{:?}",i)
         }
+        // for i in str.chars(){
+        //     println!("{:?}",i)
+        // }
     }
 }
