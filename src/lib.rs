@@ -1,9 +1,12 @@
+mod check;
+use check::{*};
+//------------lexer----------
 #[derive(Debug)]
 pub enum TokenType {
     KeyWord(KeyWord),
     Num,
     Stringliteral,
-    Symbol,
+    Symbol(SymbolType),
     Var,
     Unknown,
 }
@@ -11,6 +14,10 @@ pub enum TokenType {
 pub enum KeyWord {
     Let,
     Fn,
+}
+#[derive(Debug)]
+pub enum SymbolType{
+    Assign
 }
 #[derive(Debug)]
 pub struct Token {
@@ -57,10 +64,18 @@ impl LexerIter<'_> {
         self.read_pos = self.read_pos + 1;
     }
     fn read_var(&mut self) -> String {
-
+        // pos 0 cuttert_pos 1 char:x
+        //pos 1 cuuet 2 char:space 
         let p = self.pos;
-        let current_char = self.char as char;
-        while is_letter(current_char) && self.pos < self.input.len() {
+        while is_letter(self.char as char) && self.pos < self.input.len() {
+            self.read_next();
+        }
+        println!("{}",self.pos);
+        self.input[p..self.pos].to_string()
+    }
+    fn read_num(&mut self) -> String {
+        let p = self.pos;
+        while is_num(self.char as char) && self.pos < self.input.len() {
             self.read_next();
         }
         self.input[p..self.pos].to_string()
@@ -70,38 +85,49 @@ impl LexerIter<'_> {
 impl Iterator for LexerIter<'_> {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
-        let current_char = self.char as char;
+        let mut current_char = self.char as char;
+        let mut res  = Token { ty: TokenType::Unknown, value: None };
         if self.pos >= self.input.len() {
             return None;
         } else {
+            if is_space(current_char){
+                self.read_next();
+                current_char = self.char as char;
+            }
             if is_letter(current_char) {
-                return Some(Token {
+                res =  Token {
                     ty: TokenType::Var,
                     value: Some(self.read_var()),
-                });
-            } else {
-                self.read_next();
-                return Some(Token {
-                    ty: TokenType::Unknown,
-                    value: None,
-                });
+                };
+                return Some(res);
+            } else if is_symbol(current_char){
+                if current_char == '='{
+                    res = Token{
+                        ty:TokenType::Symbol(
+                            SymbolType::Assign
+                        ),
+                        value:None
+                    }
+                }
+            }else if is_num(current_char) {
+                res = Token{
+                    ty:TokenType::Num,
+                    value:Some(self.read_num())
+                }
             }
+            self.read_next();
+            Some(res)
         }
     }
 }
 // -----------------------utils-----------------------
-fn is_letter(c: char) -> bool {
-    ('a'..'z').contains(&c) || ('A'..'Z').contains(&c) || c == '_'
-}
-fn is_space(c: char)->bool{
-    c == ' ' || c == '\t' || c == '\n'
-}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let str = "let";
+        let str = "x = 55";
         let lex = Lexer::new(str);
         for i in lex.iter() {
             println!("{:?}", i)
