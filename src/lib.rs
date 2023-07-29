@@ -1,27 +1,32 @@
+mod evaluate;
 mod check;
+mod parse;
 use check::{*};
+mod errors;
 //------------lexer----------
-#[derive(Debug)]
+#[derive(Debug,PartialEq, Eq)]
 pub enum TokenType {
     KeyWord(KeyWord),
     Num,
     Stringliteral,
     Symbol(SymbolType),
     Var,
+    Operator,
     Unknown,
 }
-#[derive(Debug)]
+#[derive(Debug,PartialEq, Eq)]
 pub enum KeyWord {
     Let,
     Fn,
 }
-#[derive(Debug)]
+#[derive(Debug,PartialEq, Eq)]
 pub enum SymbolType{
     Assign,
     Leftquotation,
     Rightquotation,
-    
 }
+
+
 #[derive(Debug)]
 pub struct Token {
     pub ty: TokenType,
@@ -112,6 +117,7 @@ impl Iterator for LexerIter<'_> {
                 self.skip_space();
                 current_char = self.char as char;
             }
+            println!("{:?}",current_char);
             if is_letter(current_char) {
                 res =  Token {
                     ty: TokenType::Var,
@@ -133,9 +139,14 @@ impl Iterator for LexerIter<'_> {
                     }
                 }
             }else if is_num(current_char) {
-                res = Token{
+                return Some(Token{
                     ty:TokenType::Num,
                     value:Some(self.read_num())
+                }); 
+            }else if is_operator(current_char) {
+                res = Token{
+                    ty:TokenType::Operator,
+                    value:Some(current_char.to_string())
                 }
             }
             self.read_next();
@@ -150,14 +161,14 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let str = "
-        x = 5566666666
-        y = \"66\""
-        ;
+        let str = "x = 5+6";
+        let mut res = vec![];
         let lex = Lexer::new(str);
         for i in lex.iter() {
-            println!("{:?}",i)
+            res.push(i);
         }
+        println!("{:?}",parse::parse(&res))
+
         // for i in str.chars(){
         //     println!("{:?}",i)
         // }

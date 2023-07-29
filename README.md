@@ -13,5 +13,7 @@ Token { ty: Var, value: Some("y") }
 Token { ty: Symbol(Assign), value: None }
 Token { ty: Stringliteral, value: Some("66") }
 */
+
+x = 5+6 // 11
 ```
 

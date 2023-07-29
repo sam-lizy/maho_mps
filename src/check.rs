@@ -10,3 +10,6 @@ pub fn is_symbol(c:char) ->bool{
 pub fn is_num(c: char)->bool{
     ('0'..'9').contains(&c)
 }
+pub fn is_operator(c:char)->bool{
+    c == '+' ||  c == '-' ||    c == '*' ||     c == '/' 
+}
