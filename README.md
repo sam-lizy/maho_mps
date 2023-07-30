@@ -3,15 +3,10 @@
 ## 挤牙膏中..........
 
 ```
-x = 5566666666
-y = \"66\"
+lzy = 6 + 3
+x = 3 * lzy";
 /*
-Token { ty: Var, value: Some("x") }
-Token { ty: Symbol(Assign), value: None }
-Token { ty: Num, value: Some("5566666666") }
-Token { ty: Var, value: Some("y") }
-Token { ty: Symbol(Assign), value: None }
-Token { ty: Stringliteral, value: Some("66") }
+[Variable { name: "lzy", value: "9" }, Variable { name: "x", value: "27" }]
 */
 
 x = 5+6 // 11

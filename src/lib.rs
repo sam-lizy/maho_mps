@@ -108,6 +108,7 @@ impl LexerIter<'_> {
 impl Iterator for LexerIter<'_> {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
+
         let mut current_char = self.char as char;
         let mut res  = Token { ty: TokenType::Unknown, value: None };
         if self.pos >= self.input.len() {
@@ -117,7 +118,6 @@ impl Iterator for LexerIter<'_> {
                 self.skip_space();
                 current_char = self.char as char;
             }
-            println!("{:?}",current_char);
             if is_letter(current_char) {
                 res =  Token {
                     ty: TokenType::Var,
@@ -161,16 +161,16 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        let str = "x = 5+6";
+        let str = 
+        "lzy = 6 + 3
+        x = 3 * lzy +2";
         let mut res = vec![];
         let lex = Lexer::new(str);
         for i in lex.iter() {
             res.push(i);
+
         }
         println!("{:?}",parse::parse(&res))
 
-        // for i in str.chars(){
-        //     println!("{:?}",i)
-        // }
     }
 }
