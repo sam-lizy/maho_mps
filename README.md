@@ -9,6 +9,13 @@ x = 3 * lzy";
 [Variable { name: "lzy", value: "9" }, Variable { name: "x", value: "27" }]
 */
 
+
 x = 5+6 // 11
+
+fn (a,b){
+ c = a + b
+}
+
+prinrt(lzy)
 ```
 
