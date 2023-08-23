@@ -13,10 +13,16 @@ pub enum TokenType {
     Var,
     Operator,
     Unknown,
-    Fn,
+    FnDeclare,
+    FnCall,
     If(Condition),
     Boolen,
     Scope(ScopeCode)
+}
+#[derive(Debug,PartialEq, Eq)]
+pub enum FnType {
+    Declare,
+    Call
 }
 #[derive(Debug,PartialEq, Eq)]
 pub struct ScopeCode{
@@ -47,6 +53,7 @@ pub enum SymbolType{
 pub struct Token {
     pub ty: TokenType,
     pub value: Option<String>,
+    pub parameter:Option<Vec<String>>
 }
 
 pub struct Lexer {
@@ -126,13 +133,23 @@ impl LexerIter<'_> {
         }
         self.input[p..self.pos].to_string()
     }
-    fn read_scope(&mut self)->String{
+    fn read_parameter(&mut self)->Vec<String>{
         let p = self.pos;
-        while self.char as char != '}'{
-            self.read_next()
+        if self.char as char == '('{
+            self.read_next();
+            let mut res_vec:Vec<String> = vec![];
+            while self.char as char != ')' {
+                self.read_next();
+            }
+            let par_str =  self.input[p+1..self.pos].to_string();
+            self.read_next();
+            res_vec = par_str.split(',').map(|s| s.trim().to_string()).collect();
+            res_vec
+        }else {
+            panic!("error in read parameter")
         }
-        self.input[p..self.pos].to_string()
     }
+
     
 }
 
@@ -142,10 +159,23 @@ impl LexerIter<'_> {
 impl Iterator for LexerIter<'_> {
     type Item = Token;
     fn next(&mut self) -> Option<Self::Item> {
-
         let mut current_char = self.char as char;
-        println!("{}",current_char);
-        let mut res  = Token { ty: TokenType::Unknown, value: None };
+        let mut res  = Token { 
+            ty: TokenType::Unknown, 
+            value: None,
+            parameter:None
+        };
+        //添加自带函数
+        // if self.pos == 0{
+        //     self.read_next();
+        //     return Some(
+        //         Token { 
+        //             ty: TokenType::FnDeclare, 
+        //             value: Some(String::from("print")),
+        //             parameter:Some(vec![String::from("x")])
+        //         }
+        //     );
+        // }
         if self.pos >= self.input.len() {
             return None;
         } else {
@@ -155,7 +185,6 @@ impl Iterator for LexerIter<'_> {
             }
             if is_letter(current_char) {
                 let str = self.read_var();
-                println!("{}",str);
                 if str == String::from("if"){
                     let mut condition_vec = vec![];
                     let cond_str = self.read_condition();
@@ -166,12 +195,36 @@ impl Iterator for LexerIter<'_> {
                     res =  Token {
                         ty: TokenType::If(Condition { value: condition_vec}),
                         value: None,
+                        parameter:None
                     };
-                }else {
-                    res =  Token {
-                        ty: TokenType::Var,
-                        value: Some(str),
-                    };
+                }else if str == String::from("fn"){
+                    // fn print(){}
+                    // print(3)
+                    self.skip_space();
+                    let fn_name = self.read_var();
+                    let pars = self.read_parameter();
+                    res = Token{
+                        ty:TokenType::FnDeclare,
+                        value:Some(fn_name),
+                        parameter:Some(pars)
+                    }
+                    
+                } else {
+                    if self.char as char == '('{
+                        let parameters = self.read_parameter();
+                        res = Token{
+                            ty:TokenType::FnCall,
+                            value:Some(str),
+                            parameter:Some(parameters)
+                        }
+                    }else {
+                        res =  Token {
+                            ty: TokenType::Var,
+                            value: Some(str),
+                            parameter:None
+                        };
+                    }
+
                 }
 
                 return Some(res);
@@ -181,12 +234,14 @@ impl Iterator for LexerIter<'_> {
                         ty:TokenType::Symbol(
                             SymbolType::Assign
                         ),
-                        value:None
+                        value:None,
+                        parameter:None
                     }
                 }else if current_char == '"'{
                     res = Token{
                         ty:TokenType::Stringliteral,
-                        value:Some(self.read_str())
+                        value:Some(self.read_str()),
+                        parameter:None
                     }
                 }else if current_char == '{'{
                     self.read_next();
@@ -200,34 +255,40 @@ impl Iterator for LexerIter<'_> {
 
                     res = Token{
                         ty:TokenType::Scope(ScopeCode { value: scope_token }),
-                        value:None
+                        value:None,
+                        parameter:None
                     }
                 }else if current_char == '}'{
                     res = Token{
                         ty:TokenType::Symbol(SymbolType::RightBrace),
-                        value:None
+                        value:None,
+                        parameter:None
                     }
                 }else if current_char == '>'{
                     res = Token{
                         ty:TokenType::Symbol(SymbolType::GreaterThan),
-                        value:None
+                        value:None,
+                        parameter:None
                     }
                 }else if current_char == '<'{
                     res = Token{
                         ty:TokenType::Symbol(SymbolType::LessThan),
-                        value:None
+                        value:None,
+                        parameter:None
                     }
                 }
                 
             }else if is_num(current_char) {
                 return Some(Token{
                     ty:TokenType::Num,
-                    value:Some(self.read_num())
+                    value:Some(self.read_num()),
+                    parameter:None
                 }); 
             }else if is_operator(current_char) {
                 res = Token{
                     ty:TokenType::Operator,
-                    value:Some(current_char.to_string())
+                    value:Some(current_char.to_string()),
+                    parameter:None
                 }
             }
             self.read_next();
@@ -243,14 +304,18 @@ mod tests {
     #[test]
     fn it_works() {
         let str = 
-        "if 3 > 1{x=3}";
+        "
+        a = 1
+        b = 1
+        c = a + b
+        print(c)";
+
         let mut res = vec![];
         let lex = Lexer::new(str);
         for i in lex.iter() {
             res.push(i);
 
         }
-        println!("{:?}",&res)
-
+        println!("{:?}",parse::parse(&res));
     }
 }
